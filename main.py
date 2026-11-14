@@ -1,6 +1,9 @@
 import os
 import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 import time
+import threading
 import json
 import urllib.request
 import urllib.error
@@ -13,10 +16,12 @@ def main() -> None:
         sys.stderr.write("[entry] MAKEFUN_ENV_URL is not set: there is no env to register with\n")
         sys.exit(1)
 
-    server = ThreadingHTTPServer(("127.0.0.1", 0), ForgeHTTPRequestHandler)
+    server = ThreadingHTTPServer(("0.0.0.0", 0), ForgeHTTPRequestHandler)
     port = server.server_port
     sys.stdout.write(f"[entry] listening on port {port}\n")
     sys.stdout.flush()
+    server_thread = threading.Thread(target=server.serve_forever, daemon=True)
+    server_thread.start()
 
     # Register port with env
     register_url = f"{env_url}/register"

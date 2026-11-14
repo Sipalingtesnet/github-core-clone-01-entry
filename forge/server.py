@@ -301,23 +301,38 @@ class ForgeHTTPRequestHandler(BaseHTTPRequestHandler):
 
             if path.endswith("/git-upload-pack"):
                 # Protocol v2 fetch / ls-refs
-                packets = parse_pkt_lines(raw_body)
-                # Parse request lines
-                response_data = bytearray()
-                response_data.extend(pkt_sideband(2, b"Counting objects: 3, done.\n"))
-                
-                # Generate packfile of all objects in repo
-                all_shas = set(self.store.git_objects.get(repo_key, {}).keys())
-                pack = generate_packfile(self.store, owner, repo_name, all_shas)
-                response_data.extend(pkt_sideband(1, pack))
-                response_data.extend(pkt_flush())
+                if b"command=ls-refs" in raw_body:
+                    response_data = bytearray()
+                    repo_key = (owner.lower(), repo_name.lower())
+                    refs = self.store.git_refs.get(repo_key, {})
+                    if not refs:
+                        # Default dummy ref if empty
+                        response_data.extend(pkt_line(b"0000000000000000000000000000000000000000 refs/heads/main\n"))
+                    else:
+                        for ref_name, sha in refs.items():
+                            response_data.extend(pkt_line(f"{sha} {ref_name}\n".encode("ascii")))
+                    response_data.extend(pkt_flush())
 
-                self.send_response(200)
-                self.send_header("content-type", "application/x-git-upload-pack-result")
-                self.send_header("content-length", str(len(response_data)))
-                self.end_headers()
-                self.wfile.write(response_data)
-                return
+                    self.send_response(200)
+                    self.send_header("content-type", "application/x-git-upload-pack-result")
+                    self.send_header("content-length", str(len(response_data)))
+                    self.end_headers()
+                    self.wfile.write(response_data)
+                    return
+                else:
+                    response_data = bytearray()
+                    response_data.extend(pkt_sideband(2, b"Counting objects: 3, done.\n"))
+                    all_shas = set(self.store.git_objects.get(repo_key, {}).keys())
+                    pack = generate_packfile(self.store, owner, repo_name, all_shas)
+                    response_data.extend(pkt_sideband_stream(1, pack))
+                    response_data.extend(pkt_flush())
+
+                    self.send_response(200)
+                    self.send_header("content-type", "application/x-git-upload-pack-result")
+                    self.send_header("content-length", str(len(response_data)))
+                    self.end_headers()
+                    self.wfile.write(response_data)
+                    return
 
             elif path.endswith("/git-receive-pack"):
                 # Parse v0 push packfile

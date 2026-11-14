@@ -18,6 +18,16 @@ def pkt_delim() -> bytes:
 def pkt_sideband(band: int, data: bytes) -> bytes:
     return pkt_line(bytes([band]) + data)
 
+def pkt_sideband_stream(band: int, data: bytes) -> bytes:
+    chunk_size = 65516 - 5
+    out = bytearray()
+    i = 0
+    while i < len(data):
+        chunk = data[i:i+chunk_size]
+        out.extend(pkt_line(bytes([band]) + chunk))
+        i += len(chunk)
+    return bytes(out)
+
 def parse_pkt_lines(stream_data: bytes) -> List[bytes]:
     packets = []
     i = 0
