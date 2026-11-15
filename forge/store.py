@@ -21,6 +21,7 @@ class Store:
         self.git_objects: Dict[Tuple[str, str], Dict[str, Dict[str, Any]]] = {}
         self.git_refs: Dict[Tuple[str, str], Dict[str, str]] = {}
         self.git_head: Dict[Tuple[str, str], str] = {}
+        self.files: Dict[Tuple[str, str], Dict[str, Dict[str, Any]]] = {}
 
     def get_repo(self, owner: str, name: str) -> Optional[Dict[str, Any]]:
         key = (owner.lower(), name.lower())
@@ -90,6 +91,7 @@ class Store:
         key = self.resolve_repo_key(owner, name)
         if key not in self.git_head:
             self.git_head[key] = "refs/heads/main"
+        self.files[key] = {}
         return self.git_head[key]
 
     def get_git_objects(self, owner: str, name: str) -> Dict[str, Dict[str, Any]]:
@@ -97,6 +99,12 @@ class Store:
         if key not in self.git_objects:
             self.git_objects[key] = {}
         return self.git_objects[key]
+
+    def get_files_dict(self, owner: str, name: str) -> Dict[str, Dict[str, Any]]:
+        key = self.resolve_repo_key(owner, name)
+        if key not in self.files:
+            self.files[key] = {}
+        return self.files[key]
 
     def create_repo(self, owner: str, name: str, private: bool = True, description: str = "") -> Dict[str, Any]:
         key = (owner.lower(), name.lower())
@@ -127,6 +135,7 @@ class Store:
         self.git_objects[key] = {}
         self.git_refs[key] = {}
         self.git_head[key] = "refs/heads/main"
+        self.files[key] = {}
         return repo
 
     def delete_repo(self, owner: str, name: str) -> bool:
@@ -139,6 +148,7 @@ class Store:
             self.git_objects.pop(key, None)
             self.git_refs.pop(key, None)
             self.git_head.pop(key, None)
+            self.files.pop(key, None)
             return True
         return False
 
