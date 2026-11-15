@@ -421,14 +421,14 @@ class ForgeHTTPRequestHandler(BaseHTTPRequestHandler):
                     if pkt in (b"0000", b"0001"):
                         continue
                     line = pkt.decode("utf-8", errors="ignore").strip()
-                    if " " in line:
-                        line = line.split(" ")[0]
+                    if chr(0) in line:
+                        line = line.split(chr(0))[0]
                     if line and " " in line:
                         parts_cmd = line.split()
                         if len(parts_cmd) >= 3:
                             old_oid, new_oid, ref_name = parts_cmd[0], parts_cmd[1], parts_cmd[2]
-                            if " " in ref_name:
-                                ref_name = ref_name.split(" ")[0]
+                            if chr(0) in ref_name:
+                                ref_name = ref_name.split(chr(0))[0]
                             ref_commands.append((old_oid, new_oid, ref_name))
 
                 success, detail, added_shas = parse_packfile(pack_data, self.store, owner, repo_name)
