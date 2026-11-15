@@ -28,7 +28,7 @@ def pkt_sideband_stream(band: int, data: bytes) -> bytes:
         i += len(chunk)
     return bytes(out)
 
-def parse_pkt_lines(stream_data: bytes) -> List[bytes]:
+def parse_pkt_lines(stream_data: bytes) -> Tuple[List[bytes], int]:
     packets = []
     i = 0
     n = len(stream_data)
@@ -39,7 +39,7 @@ def parse_pkt_lines(stream_data: bytes) -> List[bytes]:
         if hex_len == "0000":
             packets.append(b"0000")
             i += 4
-            continue
+            break
         if hex_len == "0001":
             packets.append(b"0001")
             i += 4
@@ -51,15 +51,15 @@ def parse_pkt_lines(stream_data: bytes) -> List[bytes]:
         if length == 0:
             packets.append(b"0000")
             i += 4
-            continue
+            break
         if i + length > n:
-            # incomplete packet, take rest
             packets.append(stream_data[i+4:])
+            i = n
             break
         pkt_data = stream_data[i+4:i+length]
         packets.append(pkt_data)
         i += length
-    return packets
+    return packets, i
 
 # Packfile parser (for receive-pack unpack)
 def parse_packfile(pack_data: bytes, store: Store, owner: str, repo: str) -> Tuple[bool, str, List[str]]:
